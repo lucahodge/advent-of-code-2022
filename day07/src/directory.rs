@@ -242,14 +242,12 @@ fn total_at_most_100k_sum (root : &Dir) -> (i32, i32) {
         sum += dir_sum;
     }
     for file in root.files.iter() {
-        sum += file.size;
+        size += file.size;
     }
     if(size<= 100000){
         return (sum + size, size);
     }
-    return (0, size);
-
-
+    return (sum, size);
 }
 
 pub fn part1 (lines : Vec<String>) {
@@ -262,5 +260,69 @@ pub fn part1 (lines : Vec<String>) {
     // directory_stucture.print();
 
     let (result, _) = total_at_most_100k_sum(&directory_stucture);
-    println!("{}", result);
+    println!("Part 1: {}", result);
+}
+
+fn get_total_size (root : &Dir) -> i32 {
+    let mut size = 0;
+    for dir in root.dirs.iter() {
+        size += get_total_size(dir);
+    }
+    for file in root.files.iter() {
+        size += file.size;
+    }
+    return size;
+}
+
+fn smallest_dir_size_over (root: &Dir, remove_size : i32) -> (Option<i32>, i32) {
+    let mut size = 0;
+    let mut smallest = None;
+    for dir in root.dirs.iter() {
+        let (dir_smallest_option, dir_size) = smallest_dir_size_over(dir, remove_size);
+        match dir_smallest_option {
+            Some(dir_smallest) => {
+                match smallest{
+                    None => smallest = Some(dir_smallest),
+                    Some(s) => {
+                        if(dir_smallest < s){
+                            smallest = Some(dir_smallest);
+                        }
+                    }
+                }
+            },
+            None => {},
+        }
+        size += dir_size;
+    }
+    for file in root.files.iter() {
+        size += file.size;
+    }
+
+    match smallest {
+        None => {
+            if (size >= remove_size) {
+                return (Some(size), size);
+            }
+            return (None, size);
+        },
+        Some(s) => {
+            if (size < s) {
+                return (Some(size), size);
+            }
+            return (Some(s), size);
+        },
+    }
+}
+
+pub fn part2 (lines : Vec<String>) {
+    let commands = lines_to_commands(lines);
+    let directory_stucture = create_directory_structure(commands);
+    // directory_stucture.print();
+
+    let total_size = get_total_size(&directory_stucture);
+    let size_to_remove = total_size - 40000000;
+    // println!("{} {}", total_size, size_to_remove);
+
+    let (result, _) = smallest_dir_size_over(&directory_stucture, size_to_remove);
+    println!("Part 2: {}", result.unwrap());
 }
