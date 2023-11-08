@@ -33,14 +33,14 @@ fn file_to_moves (file_name : String) -> Vec<(Move, i32)> {
     return moves;
 }
 
-fn num_tail_locations (moves : Vec<(Move, i32)>) -> i32 {
+fn num_tail_locations (moves : &Vec<(Move, i32)>) -> i32 {
     let mut tail_visited : Vec<(i32, i32)> = vec!();
     let mut head = (0,0);
     let mut tail = (0,0);
     tail_visited.push(tail);
     for (m, n) in moves {
-        for _ in 0..n {
-            move_head(&mut head, &m);
+        for _ in 0..*n {
+            move_head(&mut head, m);
             move_tail(&mut tail, &head);
             match tail_visited.iter().find(|x| x.0 == tail.0 && x.1 == tail.1) {
                 None => {
@@ -109,11 +109,40 @@ fn move_tail (tail: &mut (i32,i32), head : &(i32,i32)) {
     }
 }
 
+fn num_tail_locations_long (moves : &Vec<(Move, i32)>, rope_len : usize) -> i32 {
+    let mut tail_visited : Vec<(i32, i32)> = vec!();
+    // let mut head = (0,0);
+    // let mut tail = (0,0);
+    let mut rope : Vec<(i32, i32)> = vec![(0,0);rope_len];
+    tail_visited.push(*rope.last().unwrap());
+    for (m, n) in moves {
+        for _ in 0..*n {
+            move_head(&mut rope[0], m);
+            for i in 1..rope.len(){
+                let (front, back) = rope.split_at_mut(i);
+                // let (front, back) = rope.split_at_mut(i);
+                move_tail(&mut back[0], &front.last().unwrap());
+                // let h = &rope[i-1];
+                // move_tail(&mut rope[i], h);
+            }
+            match tail_visited.iter().find(|x| x.0 == rope.last().unwrap().0 && x.1 == rope.last().unwrap().1) {
+                None => {
+                    tail_visited.push(*rope.last().unwrap());
+                },
+                Some(_) => {},
+            }
+            // println!("{:?} {:?}", rope[0], rope.last().unwrap());
+        }
+    }
+    return tail_visited.len() as i32;
+}
+
 fn main() {
     let moves = file_to_moves(String::from("files/head_movements.txt"));
     // let moves = file_to_moves(String::from("files/head_movements_test.txt"));
     // println!("{:?}", moves);
-    println!("{}", moves.len());
-    let part1 = num_tail_locations(moves);
+    let part1 = num_tail_locations(&moves);
     println!("Part 1: {}", part1);
+    let part2 = num_tail_locations_long(&moves, 10);
+    println!("Part 2: {}", part2);
 }
