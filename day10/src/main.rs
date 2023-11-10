@@ -1,6 +1,7 @@
 // need to have it be executing cycles
 
 #[derive(Debug)]
+#[derive(Clone)]
 enum Instruction{
     Noop,
     Addx(i32),
@@ -8,20 +9,56 @@ enum Instruction{
 
 struct Register {
     value : i32,
+    instructions : Vec<Instruction>,
     executing_instructions : Vec<(i32, Instruction)>,
 }
 
 impl Register {
-    fn new(starting_value : i32) -> Register {
-        return Register{value : starting_value, executing_instructions : vec!()};
+    fn new(starting_value : i32, instructions : Vec<Instruction>) -> Register {
+        return Register{value : starting_value, instructions, executing_instructions : vec!()};
     }
 
-    fn cycle(&mut self, instruction : Instruction) -> i32 {
-        match instruction {
-            Instruction::Noop => {},
-            Instruction::Addx(_) => {
-                self.executing_instructions.push((2, instruction));
+    fn execute_all(&mut self) -> i32 {
+        let mut cycle_num = 0;
+        let mut total_signal_strength = 0;
+
+        while self.instructions.len() + self.executing_instructions.len() > 0 {
+            cycle_num += 1;
+            let value_during_cycle = self.cycle();
+            if (cycle_num -20)%40 == 0 {
+                let signal_strength = cycle_num * value_during_cycle;
+                total_signal_strength += signal_strength;
+                // println!("{} {}", cycle_num, value_during_cycle);
+           }
+        }
+        // println!("{} {}", cycle_num, self.value);
+        return total_signal_strength;
+
+    }
+
+    fn add_execute_instr(&mut self, instr : Instruction) {
+        match instr {
+            Instruction::Noop => {
+                self.executing_instructions.push((0,instr));
             }
+            Instruction::Addx(_) => {
+                self.executing_instructions.push((1,instr));
+            }
+        }
+    }
+
+    fn cycle(&mut self) -> i32 {
+
+
+        if self.executing_instructions.len() == 0 {
+            match self.instructions.first() {
+                None => {},
+                Some(instr) => {
+                    self.add_execute_instr(instr.clone());
+                    self.instructions.remove(0);
+                },
+            }
+
         }
 
         let register_value = self.value;
@@ -38,7 +75,7 @@ impl Register {
                     };
                     self.executing_instructions.remove(index);
                 },
-                (num, ins) => {
+                (_num, _ins) => {
                     self.executing_instructions[index].0 -= 1;
                     index += 1;
                 }
@@ -65,22 +102,25 @@ fn file_to_instuctions(file_name : String) -> Vec<Instruction> {
     return instructions;
 }
 
-fn execute_instructions(register : &mut Register, instructions : Vec<Instruction>) {
-    for (index, instr) in instructions.into_iter().enumerate() {
-        let val = register.cycle(instr);
-        if (index+20)%40 == 0 {
-            println!("{} {}", index, val);
-        }
-    }
-}
+// fn execute_instructions(register : &mut Register, instructions : Vec<Instruction>) {
+//     for (index, instr) in instructions.into_iter().enumerate() {
+//         // let val = register.cycle(instr);
+//         if (index+20)%40 == 0 {
+//             println!("{} {}", index, val);
+//         }
+//     }
+// }
 
 
 fn main() {
-    println!("Hello, world!");
-    let instructions = file_to_instuctions(String::from("files/instructions_test.txt"));
+    let instructions = file_to_instuctions(String::from("files/instructions.txt"));
+    // let instructions = file_to_instuctions(String::from("files/instructions_test.txt"));
+    // let instructions = file_to_instuctions(String::from("files/short.txt"));
     // println!("{:?}", instructions);
 
-    let mut register = Register::new(1);
-    execute_instructions(&mut register, instructions);
-    println!("{}", register.value);
+    let mut register = Register::new(1, instructions);
+    let sum = register.execute_all();
+    println!("{}", sum);
+    // execute_instructions(&mut register, instructions);
+    // println!("{}", register.value);
 }
