@@ -36,6 +36,7 @@ impl Register {
 
     }
 
+
     fn add_execute_instr(&mut self, instr : Instruction) {
         match instr {
             Instruction::Noop => {
@@ -85,6 +86,37 @@ impl Register {
 
         return register_value;
     }
+
+    fn build_pixel_grid(&mut self) -> Vec<Vec<char>> {
+
+        let mut pixel_grid : Vec<Vec<char>> = vec!();
+
+        let mut cycle_num = 0;
+        let mut row : Vec<char> = vec!();
+
+        while self.instructions.len() + self.executing_instructions.len() > 0 {
+            cycle_num += 1;
+            let value_during_cycle = self.cycle();
+
+            let curr_loc = (cycle_num - 1) % 40;
+            if (curr_loc - value_during_cycle).abs() <= 1{
+                row.push('#');
+            }
+            else{
+                row.push('.');
+            }
+
+            if cycle_num % 40 == 0 {
+                pixel_grid.push(row);
+                row = vec!();
+
+            }
+        }
+        // println!("{} {}", cycle_num, self.value);
+        return pixel_grid;
+
+    
+    }
 }
 
 fn file_to_instuctions(file_name : String) -> Vec<Instruction> {
@@ -118,9 +150,18 @@ fn main() {
     // let instructions = file_to_instuctions(String::from("files/short.txt"));
     // println!("{:?}", instructions);
 
-    let mut register = Register::new(1, instructions);
+    let mut register = Register::new(1, instructions.clone());
     let sum = register.execute_all();
     println!("{}", sum);
+    
+    register = Register::new(1, instructions.clone());
+    let pixel_grid = register.build_pixel_grid();
+    for row in pixel_grid {
+        let line : String = row.into_iter().collect();
+        println!("{}", line);
+    }
+
+
     // execute_instructions(&mut register, instructions);
     // println!("{}", register.value);
 }
