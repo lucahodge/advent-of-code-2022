@@ -7,6 +7,36 @@ struct Monkey {
     test : Box<dyn Fn(i32) -> i32>,
 }
 
+impl Monkey {
+    fn inspect_and_throw (&mut self) -> Option<(i32, i32)> {
+        if self.items.len() > 0 {
+            let mut item = self.items[0];
+            self.items.remove(0);
+            //inspect
+            item = (self.operation)(item);
+            //relief
+            item /= 3;
+            //throw
+            let monkey_number = (self.test)(item);
+            return Some((monkey_number, item));
+        }
+        return None;
+    }
+    // fn turn(&mut self, monkeys : &mut Vec<Monkey>) {
+    //
+    //     while self.items.len() > 0 {
+    //         let item = self.items[0];
+    //         self.items.remove(0);
+    //
+    //
+    //         //inspect
+    //         //relief
+    //         //throw
+    //     }
+    //
+    // }
+}
+
 fn file_to_monkeys (file_name:String) -> Vec<Monkey> {
     let mut monkeys = vec!();
     let lines : Vec<String> = std::fs::read_to_string(file_name).unwrap().lines().map(String::from).collect();
@@ -67,14 +97,75 @@ fn file_to_monkeys (file_name:String) -> Vec<Monkey> {
     return monkeys;
 }
 
-fn main() {
-    println!("Hello, world!");
-    let  monkeys = file_to_monkeys(String::from("files/monkey_test.txt"));
-    for (i,m) in monkeys.into_iter().enumerate() {
-        println!("{:?}", m.number);
-        println!("{:?}", m.items);
-        // println!("{}, {}", i, (m.operation)(5));
-        // println!("{}, {}", i, (m.operation)(10));
-        // println!("{}, {}", i, (m.test)(13));
+fn round(monkeys : &mut Vec<Monkey>) {
+    for i in 0..monkeys.len() {
+        while monkeys[i].items.len() > 0 {
+            match monkeys[i].inspect_and_throw() {
+                Some((monkey_number, item)) => {
+                    for i in 0..monkeys.len() {
+                        if monkey_number == monkeys[i].number {
+                            monkeys[i].items.push(item);
+                        }
+                    }
+                },
+                None => {},
+            }
+        }
     }
+}
+
+fn number_of_inspections_per_moneky (monkeys : &mut Vec<Monkey>, num_rounds : i32) -> Vec<i32> {
+    let mut inspections : Vec<i32> = vec![0; monkeys.len()];
+    for _ in 0..num_rounds{
+        for i in 0..monkeys.len() {
+            inspections[i] += monkeys[i].items.len() as i32;
+            while monkeys[i].items.len() > 0 {
+                match monkeys[i].inspect_and_throw() {
+                    Some((monkey_number, item)) => {
+                        for i in 0..monkeys.len() {
+                            if monkey_number == monkeys[i].number {
+                                monkeys[i].items.push(item);
+                            }
+                        }
+                    },
+                    None => {},
+                }
+            }
+        }
+    }
+    return inspections;
+}
+
+fn monkey_business(inspections: Vec<i32>) -> i32 {
+    let mut max1 : (usize, i32) = (0,0);
+    for (i,e) in inspections.iter().enumerate() {
+        if *e > max1.1 {
+            max1 = (i,*e)
+        }
+    }
+    let mut max2 = (0,0);
+    for (i,e) in inspections.iter().enumerate() {
+        if *e > max2.1 && i != max1.0 {
+            max2 = (i,*e)
+        }
+    }
+    return max1.1 * max2.1;
+}
+
+fn main() {
+    let mut  monkeys = file_to_monkeys(String::from("files/monkey.txt"));
+    let inspections = number_of_inspections_per_moneky(&mut monkeys, 20);
+    // for (i,m) in monkeys.iter().enumerate() {
+    //     println!("{:?} {:?}", m.number, m.items);
+    // }
+    let monkey_business = monkey_business(inspections);
+    println!("{}", monkey_business);
+    // for inspec in inpections {
+    //     println!("{:?}", inspec);
+    // }
+
+    // round(&mut monkeys);
+    // for (i,m) in monkeys.iter().enumerate() {
+    //     println!("{:?} {:?}", m.number, m.items);
+    // }
 }
