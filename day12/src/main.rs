@@ -31,13 +31,40 @@ fn file_to_height_map(file_name : String) -> (Vec<Vec<char>>, (usize,usize), (us
 }
 
 fn generate_distance_map(height_map : Vec<Vec<char>>, start: (usize, usize), end: (usize, usize)) {
+    // using negative values so shortest distance has highest priority
     let mut visited : Vec<(usize, usize)> = vec!();
-    let mut pq : PriorityQueue<i32, (usize, usize)> = PriorityQueue::new();
-    pq.push(0, start);
-    while(pq.len() > 0) {
-        let curr = pq.pop().unwrap().1;
-        visited.push(curr);
+    let mut pq : PriorityQueue<(usize, usize), i32> = PriorityQueue::new();
+    pq.push(start, 0);
+    while pq.len() > 0 {
+        let (curr_loc, curr_dist) = pq.pop().unwrap();
+        visited.push(curr_loc);
+
+        // println!("CURR {} {:?}, {:?}", curr_dist, curr_loc, pq);
+        if curr_loc == end {
+            println!("found it {}", curr_dist);
+            return;
+        }
+
+        let mut next_to : Vec<(usize,usize)> = vec!();
+        if curr_loc.0 > 0 {
+            next_to.push((curr_loc.0-1, curr_loc.1));
+        }
+        if curr_loc.1 > 0 {
+            next_to.push((curr_loc.0, curr_loc.1-1));
+        }
+        if curr_loc.0 < height_map.len() {
+            next_to.push((curr_loc.0+1, curr_loc.1));
+        }
+        if curr_loc.1 < height_map[0].len() {
+            next_to.push((curr_loc.0, curr_loc.1+1));
+        }
+        for next in next_to {
+            if !visited.contains(&next) {
+                pq.push(next, curr_dist-1);
+            }
+        }
     }
+    println!("___");
     for e in visited {
         println!("{:?}", e);
     }
